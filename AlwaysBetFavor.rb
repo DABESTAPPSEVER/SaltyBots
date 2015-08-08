@@ -47,11 +47,10 @@ while iAmCool===true
 
 		# DECIDING WHO TO BET ON 
 		selectedplayer = (p1_winrate > p2_winrate) ? 'player1' : 'player2'
-		accounts_hsh = {}
-
 
 		# CURRENT SALT BALANCE AND HOW MUCH TO BET
 		curr_salt = main_page.search('#balance')[0].text.gsub(',','').to_i # How much Salt I currently have
+		all_in_threshold = 20000
 		wager = (curr_salt<all_in_threshold) ? curr_salt : 
 		 	(curr_salt<50000) ? 2500  : 
 		 	(curr_salt<100000) ? 3500 : 
