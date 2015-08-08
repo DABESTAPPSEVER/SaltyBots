@@ -60,7 +60,6 @@ while iAmCool===true
 		 	(curr_salt<10000000) ? 10000 :
 		 	(curr_salt<20000000) ? 15000 :
 		 	20000
-		 	p curr_salt,wager
 		wager = wager.round
 
 		# PREAMBLE TO THE BET

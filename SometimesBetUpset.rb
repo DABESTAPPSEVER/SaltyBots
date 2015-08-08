@@ -56,7 +56,15 @@ while iAmCool===true
 
 		# CURRENT SALT BALANCE AND HOW MUCH TO BET
 		curr_salt = main_page.search('#balance')[0].text.gsub(',','').to_i # How much Salt I currently have
-		wager = 5000
+		wager = (curr_salt<all_in_threshold) ? curr_salt : 
+		 	(curr_salt<50000) ? 2500  : 
+		 	(curr_salt<100000) ? 3500 : 
+		 	(curr_salt<1000000) ? 5000 :
+		 	(curr_salt<5000000) ? 7500 :
+		 	(curr_salt<10000000) ? 10000 :
+		 	(curr_salt<20000000) ? 15000 :
+		 	20000
+		wager = wager.round
 
 		# PREAMBLE TO THE BET
 		p "Signed in as #{ARGV[0]}",
