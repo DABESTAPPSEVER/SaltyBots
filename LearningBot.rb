@@ -17,12 +17,14 @@
 
 url = 'http://www.saltybet.com'
 iAmCool = true
+prev_salt = nil
 while iAmCool===true
 	agent = Mechanize.new
-
+	email = ARGV[0]
+	password = ARGV[1]
 	# SIGN IN
 	begin
-		main_page = signin(url,agent,ARGV[0],ARGV[1]).submit # REPLACE ARGV VARIABLES WITH YOUR USERNAME AND PASSWORD IF YOU WANT TO RUN THE CODE FROM RUBY
+		main_page = signin(url,agent,email,password).submit # REPLACE ARGV VARIABLES WITH YOUR EMAIL AND PASSWORD IF YOU WANT TO RUN THE CODE FROM RUBY
 	rescue Exception => e
 		errorLogging(e)
 		next
@@ -46,20 +48,31 @@ while iAmCool===true
 		p1 = status_hsh['p1name'] # Name of red team
 		p2 = status_hsh['p2name'] # Name of blue team
 
-		statsJSON = agent.get(url+'/ajax_get_stats.php').body # Get winrates for both fighters (or teams if it's an exhibition match)
-		stats_hsh = JSON.parse(statsJSON)
+		# statsJSON = agent.get(url+'/ajax_get_stats.php').body # Get winrates for both fighters (or teams if it's an exhibition match)
+		# stats_hsh = JSON.parse(statsJSON)
 
-		p1_winrate = winrate_getter(stats_hsh['p1winrate'])
-		p2_winrate = winrate_getter(stats_hsh['p2winrate'])
+		# p1_winrate = winrate_getter(stats_hsh['p1winrate'])
+		# p2_winrate = winrate_getter(stats_hsh['p2winrate'])
 
 		# DECIDING WHO TO BET ON 
-		rand = Random.rand(1..3)
-		if(p1_winrate>p2_winrate)
-			selectedplayer = rand<3 ? 'player1' : 'player2'
-		else
-			selectedplayer = rand<3 ? 'player2' : 'player1'
-		end
+		p1_winrate = Bet.getPlayerStats(p1)
+		p2_winrate = Bet.getPlayerStats(p2)
 
+		if(p1_winrate===nil && p2_winrate!=nil)
+			selectedplayer = 'player2'
+		elsif(p1_winrate!=nil && p2_winrate==nil)
+			selectedplayer = 'player1'
+		elsif(p1_winrate==nil && p2_winrate==nil)
+			selectedplayer = Random.rand(1..2)===1 ? 'player1' : 'player2'
+		else
+			if(p1_winrate>p2_winrate)
+				selectedplayer = 'player1'
+			elsif(p1_winrate<p2_winrate)
+				selectedplayer = 'player2'
+			else
+				selectedplayer = Random.rand(1..2)===1 ? 'player1' : 'player2'
+			end
+		end
 
 		# CURRENT SALT BALANCE AND HOW MUCH TO BET
 		curr_salt = main_page.search('#balance')[0].text.gsub(',','').to_i # How much Salt I currently have
@@ -75,8 +88,8 @@ while iAmCool===true
 		wager = wager.round
 
 		# PREAMBLE TO THE BET
-		p "Signed in as #{ARGV[0]}",
-		"Bets are '#{bet_status}'",
+		p "Signed in as #{email}",
+		# "Bets are '#{bet_status}'",
 		"Current balance: $#{curr_salt}",
 		"Player 1: '#{p1}' with win ratio of #{p1_winrate}",
 		"Player 2: '#{p2}' with win ratio of #{p2_winrate}",
@@ -92,7 +105,16 @@ while iAmCool===true
 					'selectedplayer'=>selectedplayer,
 					'wager'=>wager.to_s
 				}
-			)		
+			)
+
+			newBet = Bet.new
+			Bet.Account = email
+			Bet.CurrentAmount = curr_salt
+			Bet.Player1 = p1
+			Bet.Player2 = p2
+			Bet.BetChoice = selectedplayer
+			Bet.BetAmount = wager
+			Bet.BetTime = Time.now
 		rescue Exception => e
 			errorLogging(e)
 			next
@@ -100,7 +122,6 @@ while iAmCool===true
 
 		p "BET COMPLETED AT #{Time.now}!"
 		sleep 60
-
 
 
 		# GET BET STATUS
