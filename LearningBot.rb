@@ -16,15 +16,21 @@
 }
 
 url = 'http://www.saltybet.com'
-iAmCool = true
 prev_salt = nil
+wager = nil
+newBet = nil
+selectedplayer = nil
+p1 = nil
+p2 = nil
+
+iAmCool = true
 while iAmCool===true
 	agent = Mechanize.new
 	email = ARGV[0]
 	password = ARGV[1]
 	# SIGN IN
 	begin
-		main_page = signin(url,agent,email,password).submit # REPLACE ARGV VARIABLES WITH YOUR EMAIL AND PASSWORD IF YOU WANT TO RUN THE CODE FROM RUBY
+		main_page = signin(url,agent,email,password).submit
 	rescue Exception => e
 		errorLogging(e)
 		next
@@ -44,6 +50,25 @@ while iAmCool===true
 	bet_status = status_hsh['status'] # Are bets 'open' or 'locked'?
 
 	if(bet_status == 'open')
+		# CURRENT SALT 
+		curr_salt = main_page.search('#balance')[0].text.gsub(',','').to_i # How much Salt I currently have
+		
+		# IF true, I won last turn
+		if(prev_salt+wager === curr_salt)
+			newBet.Winner = selectedplayer==='player1' ? p1 : p2
+		end
+
+		# If true, I lost last turn.
+		if(prev_salt-wager === curr_salt)
+			newBet.Winner = selectedplayer==='player1' ? p2 : p1
+		end
+
+		if(newBet!=nil)
+			newBet.save_changes
+		end
+
+		prev_salt = curr_salt
+
 		# GET FIGHTER NAMES
 		p1 = status_hsh['p1name'] # Name of red team
 		p2 = status_hsh['p2name'] # Name of blue team
@@ -74,8 +99,7 @@ while iAmCool===true
 			end
 		end
 
-		# CURRENT SALT BALANCE AND HOW MUCH TO BET
-		curr_salt = main_page.search('#balance')[0].text.gsub(',','').to_i # How much Salt I currently have
+		# CHOOSING HOW MUCH TO BET
 		all_in_threshold = 20000
 		wager = (curr_salt<all_in_threshold) ? curr_salt : 
 		 	(curr_salt<50000) ? 2500  : 
@@ -135,36 +159,21 @@ while iAmCool===true
 		
 		main_page = agent.get(url)
 		p "=================================================="
-		# salt_generator(url) # Recursive method...the script checks the bets again and again...
 	else
 		p "BETS ARE LOCKED! THE TIME IS #{Time.now}. RE-CHECKING BET STATUS IN 30 SECONDS..."
 		sleep 30
 
 
-		# GET BET STATUS
-		begin
-			stateJSON = agent.get(url+'/state.json').body #=> {p1nam:'...', p2name:'...', ... status:'...', ...}
-		rescue Exception => e
-			errorLogging(e)
-			next
-		end # DONE: begin...
+		# # GET BET STATUS
+		# begin
+		# 	stateJSON = agent.get(url+'/state.json').body #=> {p1nam:'...', p2name:'...', ... status:'...', ...}
+		# rescue Exception => e
+		# 	errorLogging(e)
+		# 	next
+		# end # DONE: begin...
 
 		
 		main_page = agent.get(url)
 		p "=========================="
-		# begin
-		# 	# salt_generator(url) # Recursive method...the script checks the bets again and again...
-		# rescue Exception => e
-		# 	errorLogging(e)
-		# 	next
-		# end		
 	end	# DONE: if(bet_status == 'open')	
 end
-	
-
-# begin
-# 	url = 'http://www.saltybet.com'
-# 	salt_generator(url)
-# rescue Exception => e
-# 	errorLogging(e)
-# end
