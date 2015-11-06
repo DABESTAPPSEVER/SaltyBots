@@ -10,6 +10,14 @@ class Bet < Sequel::Model
 			:Player1=>player
 		).all
 
-		return p1
+		p2 = self.select(
+			:Player2,
+			:Winner
+		)
+		.where(
+			:Player2=>player
+		).all
+
+		
 	end
 end
